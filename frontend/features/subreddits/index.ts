@@ -1,0 +1,1 @@
+export { SubredditTable } from "./SubredditTable";

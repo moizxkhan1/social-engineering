@@ -1,0 +1,17 @@
+dev/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+data/
+backend/proxy_cache.json
+/IMPLEMENTATION_PLAN.md
+/LEVEL0_DOCUMENTATION.md
+/original_requirements.md
+/backend/data.sqlite3

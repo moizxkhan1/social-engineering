@@ -1,0 +1,1 @@
+export { RelationshipList } from "./RelationshipList";
