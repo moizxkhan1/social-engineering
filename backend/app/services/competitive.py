@@ -116,6 +116,44 @@ def _sentiment_label(score: float) -> str:
     return "neutral"
 
 
+def _compile_alias_pattern(value: str) -> re.Pattern | None:
+    tokens = re.findall(r"[a-z0-9]+", value.lower())
+    if not tokens:
+        return None
+    normalized = "".join(tokens)
+    if len(normalized) < 3:
+        return None
+    pattern = r"\b" + r"[\s\W_]+".join(re.escape(token) for token in tokens) + r"\b"
+    return re.compile(pattern, re.IGNORECASE)
+
+
+def _build_target_patterns(context: AnalysisContext, targets: list[str]) -> dict[str, list[re.Pattern]]:
+    patterns: dict[str, list[re.Pattern]] = defaultdict(list)
+    for target in targets:
+        compiled = _compile_alias_pattern(target)
+        if compiled:
+            patterns[target].append(compiled)
+
+    for alias in context.company_aliases or []:
+        compiled = _compile_alias_pattern(alias)
+        if compiled:
+            patterns[context.company_name].append(compiled)
+
+    return patterns
+
+
+def _match_targets_in_text(text: str, patterns: dict[str, list[re.Pattern]]) -> set[str]:
+    if not text:
+        return set()
+    matches: set[str] = set()
+    for target, compiled_list in patterns.items():
+        for compiled in compiled_list:
+            if compiled.search(text):
+                matches.add(target)
+                break
+    return matches
+
+
 def _build_target_index(context: AnalysisContext) -> tuple[list[str], dict[str, str]]:
     raw_targets = [context.company_name] + list(context.competitors or [])
     seen = set()
@@ -172,6 +210,7 @@ def build_competitive_overview(db: Session) -> dict[str, Any]:
         .join(Source, Source.id == Mention.source_id)
     )
     rows = db.execute(mention_stmt).all()
+    sources = db.execute(select(Source)).scalars().all()
 
     share_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     sentiment_counts: dict[str, dict[str, int]] = defaultdict(
@@ -185,20 +224,33 @@ def build_competitive_overview(db: Session) -> dict[str, Any]:
         target = _match_target(entity, alias_map)
         if not target:
             continue
-
-        share_counts[source.subreddit][target] += 1
         source_targets[source.id].add(target)
 
-        if source.id not in source_sentiment:
-            score = _sentiment_score(source.text or "")
-            source_sentiment[source.id] = _sentiment_label(score)
-        sentiment_counts[target][source_sentiment[source.id]] += 1
+    patterns = _build_target_patterns(context, targets)
+    source_index = {source.id: source for source in sources}
 
-        if source.created_utc:
-            date_key = datetime.fromtimestamp(
-                source.created_utc, tz=timezone.utc
-            ).date().isoformat()
-            daily_counts[target][date_key] += 1
+    for source_id, source in source_index.items():
+        detected = _match_targets_in_text(source.text or "", patterns)
+        if detected:
+            source_targets[source_id].update(detected)
+
+    for source_id, targets_set in source_targets.items():
+        source = source_index.get(source_id)
+        if not source:
+            continue
+        for target in targets_set:
+            share_counts[source.subreddit][target] += 1
+
+            if source_id not in source_sentiment:
+                score = _sentiment_score(source.text or "")
+                source_sentiment[source_id] = _sentiment_label(score)
+            sentiment_counts[target][source_sentiment[source_id]] += 1
+
+            if source.created_utc:
+                date_key = datetime.fromtimestamp(
+                    source.created_utc, tz=timezone.utc
+                ).date().isoformat()
+                daily_counts[target][date_key] += 1
 
     subreddit_share = []
     for subreddit, counts in share_counts.items():

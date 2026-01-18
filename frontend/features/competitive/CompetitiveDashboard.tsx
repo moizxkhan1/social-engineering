@@ -48,7 +48,7 @@ export function CompetitiveDashboard({ data, isLoading }: CompetitiveDashboardPr
                   Subreddit
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                  Mentions
+                  Sources
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   Share
