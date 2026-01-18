@@ -4,3 +4,4 @@ export * from "./subredditService";
 export * from "./entityService";
 export * from "./relationshipService";
 export * from "./graphService";
+export * from "./competitiveService";

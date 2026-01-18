@@ -27,6 +27,17 @@ class Subreddit(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class AnalysisContext(Base):
+    __tablename__ = "analysis_context"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    company_name: Mapped[str] = mapped_column(String(256))
+    company_aliases: Mapped[list[str]] = mapped_column(JSON, default=list)
+    competitors: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Source(Base):
     __tablename__ = "sources"
 

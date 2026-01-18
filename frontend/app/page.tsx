@@ -11,6 +11,7 @@ import {
   EntityDetail,
   RelationshipList,
   GraphView,
+  CompetitiveDashboard,
 } from "@/features";
 import { useAnalysisJob, useEntityDetail } from "@/hooks";
 import {
@@ -18,10 +19,11 @@ import {
   getEntities,
   getRelationships,
   getGraph,
+  getCompetitiveOverview,
 } from "@/services";
-import type { Subreddit, Entity, Relationship, GraphData } from "@/types";
+import type { Subreddit, Entity, Relationship, GraphData, CompetitiveOverview } from "@/types";
 
-type Tab = "subreddits" | "entities" | "relationships" | "graph";
+type Tab = "subreddits" | "entities" | "relationships" | "graph" | "competitive";
 
 export default function Home() {
   const job = useAnalysisJob();
@@ -32,21 +34,24 @@ export default function Home() {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
+  const [competitiveOverview, setCompetitiveOverview] = useState<CompetitiveOverview | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   const fetchAllData = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      const [subs, ents, rels, graph] = await Promise.all([
+      const [subs, ents, rels, graph, competitive] = await Promise.all([
         getSubreddits(),
         getEntities(),
         getRelationships(),
         getGraph(),
+        getCompetitiveOverview(),
       ]);
       setSubreddits(subs);
       setEntities(ents);
       setRelationships(rels);
       setGraphData(graph);
+      setCompetitiveOverview(competitive);
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -61,12 +66,13 @@ export default function Home() {
     }
   }, [job.status, fetchAllData]);
 
-  const handleAnalyze = (domain: string) => {
+  const handleAnalyze = (domain: string, competitors: string[]) => {
     setSubreddits([]);
     setEntities([]);
     setRelationships([]);
     setGraphData(null);
-    job.start(domain);
+    setCompetitiveOverview(null);
+    job.start(domain, competitors);
   };
 
   const handleEntitySelect = (entity: Entity) => {
@@ -80,6 +86,7 @@ export default function Home() {
     { id: "entities", label: "Entities", count: entities.length },
     { id: "relationships", label: "Relationships", count: relationships.length },
     { id: "graph", label: "Graph" },
+    { id: "competitive", label: "Competitive" },
   ];
 
   return (
@@ -189,6 +196,15 @@ export default function Home() {
                   description="Visual representation of entities and their relationships"
                 >
                   <GraphView data={graphData} isLoading={isLoadingData} />
+                </Section>
+              )}
+
+              {activeTab === "competitive" && (
+                <Section
+                  title="Competitive Exposure"
+                  description="Share of voice, sentiment, co-mentions, and anomalies"
+                >
+                  <CompetitiveDashboard data={competitiveOverview} isLoading={isLoadingData} />
                 </Section>
               )}
             </div>

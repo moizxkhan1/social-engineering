@@ -13,7 +13,7 @@ interface UseAnalysisJobReturn {
   error: string | null;
   result: JobResponse["result"];
   isLoading: boolean;
-  start: (domain: string) => Promise<void>;
+  start: (domain: string, competitors?: string[]) => Promise<void>;
   reset: () => void;
 }
 
@@ -62,7 +62,7 @@ export function useAnalysisJob(): UseAnalysisJobReturn {
   );
 
   const start = useCallback(
-    async (domain: string) => {
+    async (domain: string, competitors: string[] = []) => {
       stopPolling();
       setError(null);
       setResult(null);
@@ -70,7 +70,7 @@ export function useAnalysisJob(): UseAnalysisJobReturn {
       setIsLoading(true);
 
       try {
-        const response = await startAnalysis(domain);
+        const response = await startAnalysis(domain, competitors);
         setJobId(response.job_id);
         setStatus(response.status);
 

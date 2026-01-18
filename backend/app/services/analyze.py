@@ -17,6 +17,7 @@ from ..repositories import (
     add_source,
     clear_all,
     get_or_create_entity,
+    set_analysis_context,
     upsert_subreddit,
 )
 from .llm import LLMClient
@@ -190,6 +191,7 @@ def run_analysis(
     domain: str,
     progress_cb=None,
     proxy_manager: ProxyManager | None = None,
+    competitors: list[str] | None = None,
 ) -> dict:
     clear_all(db)
 
@@ -200,6 +202,13 @@ def run_analysis(
     llm = LLMClient(api_key=settings.openai_api_key or "", model=settings.openai_model)
     company = llm.resolve_company(domain, base_name)
     aliases = _unique_terms([company.name] + list(company.aliases))
+    competitor_names = _normalize_competitors(competitors or [])
+    set_analysis_context(
+        db,
+        company_name=company.name,
+        company_aliases=aliases,
+        competitors=competitor_names,
+    )
 
     if progress_cb:
         progress_cb("discovering_subreddits")
@@ -333,6 +342,7 @@ def run_analysis(
         "status": "complete",
         "company_name": company.name,
         "company_aliases": aliases,
+        "competitors": competitor_names,
         "subreddit_count": len(scored),
         "source_count": len(sources),
         "entity_count": _count_entities(db),
@@ -352,6 +362,27 @@ def _heuristic_company_name(domain: str) -> str:
     root = parts[0] if parts else host
     name = " ".join(segment.capitalize() for segment in root.replace("-", " ").split())
     return name or root
+
+
+def _normalize_competitors(values: list[str]) -> list[str]:
+    cleaned_values = []
+    for raw in values:
+        cleaned = raw.strip()
+        if not cleaned:
+            continue
+        if "://" in cleaned or "." in cleaned:
+            cleaned = _heuristic_company_name(cleaned)
+        cleaned_values.append(cleaned)
+
+    seen = set()
+    result = []
+    for val in cleaned_values:
+        key = val.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(val)
+    return result
 
 
 def _unique_terms(values: list[str]) -> list[str]:

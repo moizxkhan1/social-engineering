@@ -9,6 +9,7 @@ export type ProgressStep =
 
 export interface AnalyzeRequest {
   domain: string;
+  competitors?: string[];
 }
 
 export interface AnalyzeResponse {
@@ -19,6 +20,7 @@ export interface AnalyzeResponse {
 export interface JobResult {
   company_name: string;
   company_aliases?: string[];
+  competitors?: string[];
   subreddit_count: number;
   source_count: number;
   entity_count: number;

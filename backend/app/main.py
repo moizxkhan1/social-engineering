@@ -19,6 +19,7 @@ from .schemas import (
     SubredditOut,
  )
 from .services.analyze import run_analysis
+from .services.competitive import build_competitive_overview
 from .services.jobs import job_manager
 from .services.llm import LLMConfigError
 from .services.proxy import ProxyManager
@@ -84,7 +85,7 @@ def _shutdown() -> None:
         logger.info("Proxy manager stopped")
 
 
-def _run_job(job_id: str, domain: str) -> None:
+def _run_job(job_id: str, domain: str, competitors: list[str]) -> None:
     job_manager.start_job(job_id)
     db = SessionLocal()
     try:
@@ -93,6 +94,7 @@ def _run_job(job_id: str, domain: str) -> None:
             domain,
             progress_cb=lambda step: job_manager.update_progress(job_id, step),
             proxy_manager=proxy_manager,
+            competitors=competitors,
         )
         job_manager.finish_job(job_id, result=result)
     except LLMConfigError as exc:
@@ -133,13 +135,17 @@ def proxy_status() -> dict:
 @app.post("/api/analyze")
 def analyze(payload: AnalyzeRequest) -> dict:
     try:
-        job = job_manager.create_job(payload.domain)
+        job = job_manager.create_job(payload.domain, payload.competitors)
     except RuntimeError:
         raise HTTPException(status_code=409, detail="Analysis already running")
 
     import threading
 
-    threading.Thread(target=_run_job, args=(job.job_id, payload.domain), daemon=True).start()
+    threading.Thread(
+        target=_run_job,
+        args=(job.job_id, payload.domain, payload.competitors),
+        daemon=True,
+    ).start()
     return {"job_id": job.job_id, "status": job.status}
 
 
@@ -274,6 +280,11 @@ def list_relationships(db: Session = Depends(get_db)) -> list[RelationshipOut]:
         )
         for rel, subject_name, object_name, source_url in rows
     ]
+
+
+@app.get("/api/competitive")
+def competitive_overview(db: Session = Depends(get_db)) -> dict:
+    return build_competitive_overview(db)
 
 
 @app.get("/api/graph")
