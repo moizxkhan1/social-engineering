@@ -3,10 +3,11 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from ..models import Entity, Mention, Relationship, Source, Subreddit
+from ..models import AnalysisContext, Entity, Mention, Relationship, Source, Subreddit
 
 
 def clear_all(db: Session) -> None:
+    db.execute(delete(AnalysisContext))
     db.execute(delete(Relationship))
     db.execute(delete(Mention))
     db.execute(delete(Entity))
@@ -139,3 +140,28 @@ def add_relationship(
     db.commit()
     db.refresh(relationship)
     return relationship
+
+
+def set_analysis_context(
+    db: Session,
+    *,
+    company_name: str,
+    company_aliases: list[str],
+    competitors: list[str],
+) -> AnalysisContext:
+    existing = db.get(AnalysisContext, 1)
+    if existing is None:
+        existing = AnalysisContext(id=1)
+
+    existing.company_name = company_name
+    existing.company_aliases = list(company_aliases or [])
+    existing.competitors = list(competitors or [])
+
+    db.add(existing)
+    db.commit()
+    db.refresh(existing)
+    return existing
+
+
+def get_analysis_context(db: Session) -> AnalysisContext | None:
+    return db.get(AnalysisContext, 1)

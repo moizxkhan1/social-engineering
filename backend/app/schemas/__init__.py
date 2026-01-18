@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class AnalyzeRequest(BaseModel):
     domain: str = Field(min_length=1, max_length=253)
+    competitors: list[str] = Field(default_factory=list)
 
 
 class SubredditOut(BaseModel):

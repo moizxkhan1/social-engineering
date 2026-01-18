@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..utils.logging import get_logger
 
@@ -16,6 +16,7 @@ class JobStatus:
     status: str
     domain: str
     created_at: float
+    competitors: list[str] = field(default_factory=list)
     started_at: float | None = None
     finished_at: float | None = None
     progress: str = "queued"
@@ -29,7 +30,7 @@ class JobManager:
         self._active_job_id: str | None = None
         self._jobs: dict[str, JobStatus] = {}
 
-    def create_job(self, domain: str) -> JobStatus:
+    def create_job(self, domain: str, competitors: list[str] | None = None) -> JobStatus:
         with self._lock:
             if self._active_job_id is not None:
                 raise RuntimeError("busy")
@@ -38,6 +39,7 @@ class JobManager:
                 job_id=job_id,
                 status="queued",
                 domain=domain,
+                competitors=list(competitors or []),
                 created_at=time.time(),
             )
             self._jobs[job_id] = job

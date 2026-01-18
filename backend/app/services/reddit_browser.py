@@ -5,13 +5,13 @@ import time
 from typing import Any
 
 from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
-from playwright_stealth import Stealth
+try:
+    from playwright_stealth import stealth_sync
+except Exception:  # pragma: no cover - optional stealth dependency
+    stealth_sync = None
 
 from ..utils.logging import get_logger
 from .proxy import get_random_user_agent
-
-# Initialize stealth configuration
-_stealth = Stealth()
 
 logger = get_logger("sie.reddit_browser")
 
@@ -73,7 +73,8 @@ class BrowserRedditClient:
         self._page.set_default_timeout(self._timeout_ms)
 
         # Apply stealth to avoid detection
-        _stealth.apply_stealth_sync(self._page)
+        if stealth_sync:
+            stealth_sync(self._page)
 
         logger.info("Browser initialized (headless=%s, proxy=%s)", self._headless, bool(self._proxy))
         return self._page

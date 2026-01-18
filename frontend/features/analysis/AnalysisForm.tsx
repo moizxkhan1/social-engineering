@@ -4,19 +4,24 @@ import { useState, FormEvent } from "react";
 import { Button, Card } from "@/components";
 
 interface AnalysisFormProps {
-  onSubmit: (domain: string) => void;
+  onSubmit: (domain: string, competitors: string[]) => void;
   isLoading: boolean;
   disabled?: boolean;
 }
 
 export function AnalysisForm({ onSubmit, isLoading, disabled }: AnalysisFormProps) {
   const [domain, setDomain] = useState("");
+  const [competitorsInput, setCompetitorsInput] = useState("");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = domain.trim();
+    const competitors = competitorsInput
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
     if (trimmed) {
-      onSubmit(trimmed);
+      onSubmit(trimmed, competitors);
     }
   };
 
@@ -61,6 +66,26 @@ export function AnalysisForm({ onSubmit, isLoading, disabled }: AnalysisFormProp
                 placeholder="Enter a company domain (e.g., openai.com)"
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
+                disabled={isLoading || disabled}
+                className="flex-1 py-4 pr-4 bg-transparent text-white placeholder-slate-500 text-base focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-focus-within:opacity-100 blur transition-opacity duration-300" />
+            <div className="relative flex items-center bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden focus-within:border-emerald-500/50 transition-all duration-300">
+              <div className="pl-4 pr-2">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                name="competitors"
+                placeholder="Competitors (comma-separated)"
+                value={competitorsInput}
+                onChange={(e) => setCompetitorsInput(e.target.value)}
                 disabled={isLoading || disabled}
                 className="flex-1 py-4 pr-4 bg-transparent text-white placeholder-slate-500 text-base focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               />
