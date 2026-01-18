@@ -32,3 +32,28 @@ Mention confidence shown in the UI is LLM confidence multiplied by resolution co
 ## Discovery scope
 - Top 20 subreddits are ranked and stored.
 - Sources are fetched from the top 5 subreddits for analysis.
+
+## Core requirements
+- `OPENAI_API_KEY` is required for LLM extraction.
+- Optional: Reddit OAuth credentials (`REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`) improve coverage and reduce scraping reliance.
+
+## Start the app (Docker)
+1) Copy `backend/.env.example` to `backend/.env` and set `OPENAI_API_KEY`.
+2) From the repo root: `docker compose up --build`
+3) Open:
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:8000
+
+## Start the app (local dev)
+Backend:
+- `cd backend`
+- `python -m venv venv`
+- `venv\Scripts\activate`
+- `pip install -r requirements.txt`
+- `uvicorn app.main:app --reload`
+
+Frontend:
+- `cd frontend`
+- `npm install`
+- `npm run dev`
+- Open http://localhost:3000
